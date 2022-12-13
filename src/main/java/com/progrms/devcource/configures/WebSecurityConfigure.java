@@ -13,14 +13,16 @@ public class WebSecurityConfigure {
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers("/assets/**");
+        return (web) -> web.ignoring().antMatchers("/assets/**");
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // .requestMatchers("/me")
         http
                 .authorizeHttpRequests()
-                .requestMatchers("/me").hasAnyRole("USER", "ADMIN")
+                .antMatchers("/me")
+                .hasAnyRole("USER", "ADMIN")
                 .anyRequest().permitAll()
                 .and()
                 .formLogin()
@@ -30,4 +32,5 @@ public class WebSecurityConfigure {
 
         return http.build();
     }
+
 }
