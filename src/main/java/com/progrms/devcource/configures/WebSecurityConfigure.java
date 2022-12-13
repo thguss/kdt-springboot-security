@@ -45,13 +45,13 @@ public class WebSecurityConfigure {
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
                 .username("user")
-                .password("user123")
+                .password(passwordEncoder().encode("user123"))
                 .roles("USER")
                 .build();
 
         UserDetails admin = User.builder()
                 .username("admin")
-                .password("{noop}admin123")
+                .password(passwordEncoder().encode("admin123"))
                 .roles("ADMIN")
                 .build();
 
@@ -60,7 +60,7 @@ public class WebSecurityConfigure {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
 }
