@@ -27,19 +27,28 @@ public class WebSecurityConfigure {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests()
-                .antMatchers("/me")
-                .hasAnyRole("USER", "ADMIN")
-                .anyRequest().permitAll()
+                    .antMatchers("/me")
+                    .hasAnyRole("USER", "ADMIN")
+                    .anyRequest().permitAll()
                 .and()
                 .formLogin()
-                .defaultSuccessUrl("/")
-                .permitAll()
+                    .defaultSuccessUrl("/")
+                    .permitAll()
                 .and()
                 .logout()
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                .logoutSuccessUrl("/")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true);
+                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                    .logoutSuccessUrl("/")
+                    .invalidateHttpSession(true)
+                    .clearAuthentication(true)
+                .and()
+                .rememberMe()
+                    .rememberMeParameter("remember-me")
+                    .tokenValiditySeconds(300)
+                .and()
+                .requiresChannel()
+                    .anyRequest()
+                    .requiresSecure()
+        ;
 
         return http.build();
     }
