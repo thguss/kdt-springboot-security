@@ -51,53 +51,49 @@ public class WebSecurityConfigure {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeRequests()
-                .antMatchers("/me").hasAnyRole("USER", "ADMIN")
-                .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN')")
-                .anyRequest().permitAll()
-                .accessDecisionManager(accessDecisionManager())
-                .and()
-                .formLogin()
-                .defaultSuccessUrl("/")
-                .permitAll()
-                .and()
-                /**
-                 * 로그아웃 설정
-                 */
-                .logout()
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                .logoutSuccessUrl("/")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true)
-                .and()
-                /**
-                 * remember-me 설정
-                 */
-                .rememberMe()
-                .rememberMeParameter("remember-me")
-                .tokenValiditySeconds(300)
-                .and()
-                /**
-                 * HTTP 요청을 HTTPS 요청으로 다이렉트
-                 */
-                .requiresChannel()
-                .anyRequest()
-                .requiresSecure()
-                .and()
-                .anonymous()
-                .principal("thisIsAnonymousUser")
-                .authorities("ROLE_ANONYMOUS", "ROLE_UNKNOWN")
-                .and()
-                .exceptionHandling()
-                .accessDeniedHandler(accessDeniedHandler())
-                .and()
-                .sessionManagement()
-                .sessionFixation().changeSessionId()
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .invalidSessionUrl("/")
-                .maximumSessions(1)
-                .maxSessionsPreventsLogin(false)
-        ;
+            .authorizeRequests()
+            .antMatchers("/me", "/asyncHello", "/someMethod").hasAnyRole("USER", "ADMIN")
+            .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN')")
+            .anyRequest().permitAll()
+            .accessDecisionManager(accessDecisionManager())
+            .and()
+            .formLogin()
+            .defaultSuccessUrl("/")
+            .permitAll()
+            .and()
+            /**
+             * Basic Authentication 설정
+             */
+            .httpBasic()
+            .and()
+            /**
+             * remember me 설정
+             */
+            .rememberMe()
+            .rememberMeParameter("remember-me")
+            .tokenValiditySeconds(300)
+            .and()
+            /**
+             * 로그아웃 설정
+             */
+            .logout()
+            .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+            .logoutSuccessUrl("/")
+            .invalidateHttpSession(true)
+            .clearAuthentication(true)
+            .and()
+            /**
+             * HTTP 요청을 HTTPS 요청으로 리다이렉트
+             */
+            .requiresChannel()
+            .anyRequest().requiresSecure()
+            .and()
+            /**
+             * 예외처리 핸들러
+             */
+            .exceptionHandling()
+            .accessDeniedHandler(accessDeniedHandler())
+    ;
         return http.build();
     }
 
