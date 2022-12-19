@@ -3,6 +3,8 @@ package com.progrms.devcource.configures;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.expression.SecurityExpressionHandler;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -15,11 +17,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 
 @Slf4j
@@ -32,19 +34,24 @@ public class WebSecurityConfigure {
         return (web) -> web.ignoring().antMatchers("/assets/**");
     }
 
+    public SecurityExpressionHandler<FilterInvocation> expressionHandler() {
+        return new CustomWebSecurityExpressionHandler(
+                new AuthenticationTrustResolverImpl(),
+                "ROLE_"
+        );
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
                     .antMatchers("/me").hasAnyRole("USER", "ADMIN")
-                    .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN')")
+                    .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN') and oddAdmin")
                     .anyRequest().permitAll()
+                .expressionHandler(expressionHandler())
                 .and()
                 .formLogin()
                     .defaultSuccessUrl("/")
-                .loginPage("/my-login")
-                .usernameParameter("my-username")
-                .passwordParameter("my-password")
                 .permitAll()
                 .and()
                 /**
@@ -110,13 +117,19 @@ public class WebSecurityConfigure {
                 .roles("USER")
                 .build();
 
-        UserDetails admin = User.builder()
-                .username("admin")
+        UserDetails admin01 = User.builder()
+                .username("admin01")
                 .password(passwordEncoder().encode("admin123"))
                 .roles("ADMIN")
                 .build();
 
-        return new InMemoryUserDetailsManager(user, admin);
+        UserDetails admin02 = User.builder()
+                .username("admin02")
+                .password(passwordEncoder().encode("admin123"))
+                .roles("ADMIN")
+                .build();
+
+        return new InMemoryUserDetailsManager(user, admin01, admin02);
     }
 
     @Bean
