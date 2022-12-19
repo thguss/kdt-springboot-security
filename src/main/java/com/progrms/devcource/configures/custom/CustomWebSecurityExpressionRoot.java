@@ -1,4 +1,4 @@
-package com.progrms.devcource.configures;
+package com.progrms.devcource.configures.custom;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;

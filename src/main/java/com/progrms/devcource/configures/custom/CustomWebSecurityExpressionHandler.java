@@ -1,4 +1,4 @@
-package com.progrms.devcource.configures;
+package com.progrms.devcource.configures.custom;
 
 import org.springframework.security.access.expression.AbstractSecurityExpressionHandler;
 import org.springframework.security.access.expression.SecurityExpressionOperations;
