@@ -3,7 +3,10 @@ package com.progrms.devcource.configures;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.AccessDecisionManager;
+import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.expression.SecurityExpressionHandler;
+import org.springframework.security.access.vote.UnanimousBased;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -20,9 +23,12 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.expression.WebExpressionVoter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Configuration
@@ -45,44 +51,44 @@ public class WebSecurityConfigure {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                    .antMatchers("/me").hasAnyRole("USER", "ADMIN")
-                    .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN') and oddAdmin")
-                    .anyRequest().permitAll()
-                .expressionHandler(expressionHandler())
+                .antMatchers("/me").hasAnyRole("USER", "ADMIN")
+                .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN')")
+                .anyRequest().permitAll()
+                .accessDecisionManager(accessDecisionManager())
                 .and()
                 .formLogin()
-                    .defaultSuccessUrl("/")
+                .defaultSuccessUrl("/")
                 .permitAll()
                 .and()
                 /**
                  * 로그아웃 설정
                  */
                 .logout()
-                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                    .logoutSuccessUrl("/")
-                    .invalidateHttpSession(true)
-                    .clearAuthentication(true)
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
                 .and()
                 /**
                  * remember-me 설정
                  */
                 .rememberMe()
-                    .rememberMeParameter("remember-me")
-                    .tokenValiditySeconds(300)
+                .rememberMeParameter("remember-me")
+                .tokenValiditySeconds(300)
                 .and()
                 /**
                  * HTTP 요청을 HTTPS 요청으로 다이렉트
                  */
                 .requiresChannel()
-                    .anyRequest()
-                    .requiresSecure()
+                .anyRequest()
+                .requiresSecure()
                 .and()
                 .anonymous()
-                    .principal("thisIsAnonymousUser")
-                    .authorities("ROLE_ANONYMOUS", "ROLE_UNKNOWN")
+                .principal("thisIsAnonymousUser")
+                .authorities("ROLE_ANONYMOUS", "ROLE_UNKNOWN")
                 .and()
                 .exceptionHandling()
-                    .accessDeniedHandler(accessDeniedHandler())
+                .accessDeniedHandler(accessDeniedHandler())
                 .and()
                 .sessionManagement()
                 .sessionFixation().changeSessionId()
@@ -90,9 +96,16 @@ public class WebSecurityConfigure {
                 .invalidSessionUrl("/")
                 .maximumSessions(1)
                 .maxSessionsPreventsLogin(false)
-                .and()
         ;
         return http.build();
+    }
+
+    @Bean
+    public AccessDecisionManager accessDecisionManager() {
+        List<AccessDecisionVoter<?>> voters = new ArrayList<>();
+        voters.add(new WebExpressionVoter());
+        voters.add(new OddAdminVoter(new AntPathRequestMatcher("/admin")));
+        return new UnanimousBased(voters);
     }
 
     @Bean
