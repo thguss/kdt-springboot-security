@@ -3,6 +3,8 @@ spring:
     name: spring security 01
   thymeleaf:
     cache: true
+    prefix: classpath:templates/
+    suffix: .html
   security:
     user:
       name: user

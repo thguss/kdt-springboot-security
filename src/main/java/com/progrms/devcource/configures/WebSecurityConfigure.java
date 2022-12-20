@@ -17,12 +17,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 import org.springframework.security.task.DelegatingSecurityContextTaskExecutor;
 import org.springframework.security.web.FilterInvocation;
@@ -32,6 +30,7 @@ import org.springframework.security.web.access.expression.WebExpressionVoter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,12 +65,14 @@ public class WebSecurityConfigure {
         return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
     }
 
+    /*
     public SecurityExpressionHandler<FilterInvocation> expressionHandler() {
         return new CustomWebSecurityExpressionHandler(
                 new AuthenticationTrustResolverImpl(),
                 "ROLE_"
         );
     }
+    */
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -144,6 +145,7 @@ public class WebSecurityConfigure {
         };
     }
 
+    /*
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
@@ -165,6 +167,14 @@ public class WebSecurityConfigure {
                 .build();
 
         return new InMemoryUserDetailsManager(user, admin01, admin02);
+    }
+    */
+
+    @Bean
+    public UserDetailsService userDetailsService(DataSource dataSource) {
+        JdbcDaoImpl jdbcDao = new JdbcDaoImpl();
+        jdbcDao.setDataSource(dataSource);
+        return jdbcDao;
     }
 
     @Bean
