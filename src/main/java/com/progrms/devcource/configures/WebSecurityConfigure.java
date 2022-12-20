@@ -1,6 +1,5 @@
 package com.progrms.devcource.configures;
 
-import com.progrms.devcource.configures.custom.CustomWebSecurityExpressionHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -9,9 +8,7 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.AccessDecisionVoter;
-import org.springframework.security.access.expression.SecurityExpressionHandler;
 import org.springframework.security.access.vote.UnanimousBased;
-import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -20,11 +17,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 import org.springframework.security.task.DelegatingSecurityContextTaskExecutor;
-import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionVoter;
@@ -65,15 +60,6 @@ public class WebSecurityConfigure {
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
     }
-
-    /*
-    public SecurityExpressionHandler<FilterInvocation> expressionHandler() {
-        return new CustomWebSecurityExpressionHandler(
-                new AuthenticationTrustResolverImpl(),
-                "ROLE_"
-        );
-    }
-    */
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -145,31 +131,6 @@ public class WebSecurityConfigure {
             response.getWriter().close();
         };
     }
-
-    /*
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.builder()
-                .username("user")
-                .password(passwordEncoder().encode("user123"))
-                .roles("USER")
-                .build();
-
-        UserDetails admin01 = User.builder()
-                .username("admin01")
-                .password(passwordEncoder().encode("admin123"))
-                .roles("ADMIN")
-                .build();
-
-        UserDetails admin02 = User.builder()
-                .username("admin02")
-                .password(passwordEncoder().encode("admin123"))
-                .roles("ADMIN")
-                .build();
-
-        return new InMemoryUserDetailsManager(user, admin01, admin02);
-    }
-    */
 
     @Bean
     public UserDetailsService userDetailsService(DataSource dataSource) {
