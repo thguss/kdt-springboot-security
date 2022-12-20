@@ -66,7 +66,7 @@ public class WebSecurityConfigure {
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/assets/**");
+        return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
     }
 
     public SecurityExpressionHandler<FilterInvocation> expressionHandler() {

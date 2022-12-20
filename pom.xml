@@ -23,6 +23,8 @@
 		<commons.io.version>2.11.0</commons.io.version>
 		<jackson.datatype.version>2.12.4</jackson.datatype.version>
 		<log4jdbc.version>0.2.7</log4jdbc.version>
+		<h2.version>2.1.214</h2.version>
+		<hikariCP.version>5.0.1</hikariCP.version>
 	</properties>
 
 	<dependencies>
@@ -138,6 +140,24 @@
 			<groupId>org.lazyluke</groupId>
 			<artifactId>log4jdbc-remix</artifactId>
 			<version>${log4jdbc.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>${h2.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>${hikariCP.version}</version>
 		</dependency>
     </dependencies>
 
