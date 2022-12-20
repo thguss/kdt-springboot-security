@@ -1,6 +1,7 @@
 package com.progrms.devcource.configures;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.vote.UnanimousBased;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -18,6 +20,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
 import org.springframework.security.task.DelegatingSecurityContextTaskExecutor;
 import org.springframework.security.web.SecurityFilterChain;
@@ -35,6 +39,34 @@ import java.util.List;
 @EnableWebSecurity
 public class WebSecurityConfigure {
 
+    private DataSource dataSource;
+
+    @Autowired
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    // UserDetailsService 의 구현체로 JdbcDaoImpl 을 사용하도록 변경
+    @Bean
+    public UserDetailsService userDetailsService(DataSource dataSource) {
+        JdbcDaoImpl jdbcDao = new JdbcDaoImpl();
+
+        jdbcDao.setDataSource(dataSource);
+        jdbcDao.setEnableAuthorities(false);
+        jdbcDao.setEnableGroups(true);
+        jdbcDao.setUsersByUsernameQuery(
+                "SELECT login_id, passwd, true FROM Users WHERE login_id = ?"
+        );
+        jdbcDao.setGroupAuthoritiesByUsernameQuery(
+                "SELECT u.LOGIN_ID, g.NAME, p.NAME FROM USERS u\n"
+                        + " JOIN GROUPS g ON u.GROUP_ID = g.ID\n"
+                        + " LEFT JOIN GROUP_PERMISSION gp ON g.ID = gp.GROUP_ID\n"
+                        + " JOIN PERMISSIONS p ON gp.PERMISSION_ID = p.ID\n"
+                        + " WHERE u.LOGIN_ID = ?");
+
+        return jdbcDao;
+    }
+
     @Bean
     @Qualifier("myAsyncTaskExecutor")
     public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
@@ -50,10 +82,6 @@ public class WebSecurityConfigure {
             @Qualifier("myAsyncTaskExecutor") AsyncTaskExecutor delegate
     ) {
         return new DelegatingSecurityContextAsyncTaskExecutor(delegate);
-    }
-
-    public WebSecurityConfigure() {
-        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
     }
 
     @Bean
@@ -132,33 +160,33 @@ public class WebSecurityConfigure {
         };
     }
 
-    @Bean
-    public UserDetailsService userDetailsService(DataSource dataSource) {
-        JdbcDaoImpl jdbcDao = new JdbcDaoImpl();
-        jdbcDao.setDataSource(dataSource);
-        jdbcDao.setEnableAuthorities(false);
-        jdbcDao.setEnableGroups(true);
-        jdbcDao.setUsersByUsernameQuery(
-                "SELECT " +
-                    "login_id, passwd, true " +
-                "FROM " +
-                    "USERS " +
-                "WHERE " +
-                    "login_id = ?"
-        );
-        jdbcDao.setGroupAuthoritiesByUsernameQuery(
-                "SELECT " +
-                    "u.login_id, g.name, p.name " +
-                "FROM " +
-                    "users u JOIN groups g ON u.group_id = g.id " +
-                        "LEFT JOIN group_permission gp ON g.id = gp.group_id " +
-                        "JOIN permissions p ON p.id = gp.permission_id " +
-                "WHERE " +
-                    "u.login_id = ?"
-        );
-
-        return jdbcDao;
-    }
+//    @Bean
+//    public UserDetailsService userDetailsService(DataSource dataSource) {
+//        JdbcDaoImpl jdbcDao = new JdbcDaoImpl();
+//        jdbcDao.setDataSource(dataSource);
+//        jdbcDao.setEnableAuthorities(false);
+//        jdbcDao.setEnableGroups(true);
+//        jdbcDao.setUsersByUsernameQuery(
+//                "SELECT " +
+//                    "login_id, passwd, true " +
+//                "FROM " +
+//                    "USERS " +
+//                "WHERE " +
+//                    "login_id = ?"
+//        );
+//        jdbcDao.setGroupAuthoritiesByUsernameQuery(
+//                "SELECT " +
+//                    "u.login_id, g.name, p.name " +
+//                "FROM " +
+//                    "users u JOIN groups g ON u.group_id = g.id " +
+//                        "LEFT JOIN group_permission gp ON g.id = gp.group_id " +
+//                        "JOIN permissions p ON p.id = gp.permission_id " +
+//                "WHERE " +
+//                    "u.login_id = ?"
+//        );
+//
+//        return jdbcDao;
+//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
