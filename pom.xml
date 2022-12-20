@@ -22,6 +22,7 @@
 		<commons.lang.version>3.12.0</commons.lang.version>
 		<commons.io.version>2.11.0</commons.io.version>
 		<jackson.datatype.version>2.12.4</jackson.datatype.version>
+		<log4jdbc.version>0.2.7</log4jdbc.version>
 	</properties>
 
 	<dependencies>
@@ -132,6 +133,12 @@
             <artifactId>lombok</artifactId>
             <version>1.18.24</version>
         </dependency>
+
+		<dependency>
+			<groupId>org.lazyluke</groupId>
+			<artifactId>log4jdbc-remix</artifactId>
+			<version>${log4jdbc.version}</version>
+		</dependency>
     </dependencies>
 
 	<build>
