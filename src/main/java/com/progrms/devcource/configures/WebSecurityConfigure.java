@@ -15,20 +15,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionVoter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,32 +43,9 @@ public class WebSecurityConfigure {
         return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationManagerBuilder auth) throws Exception {
-        return auth.userDetailsService(userService).and().build();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.builder()
-                .username("user")
-                .password(passwordEncoder().encode("user123"))
-                .roles("USER")
-                .build();
-
-        UserDetails admin01 = User.builder()
-                .username("admin01")
-                .password(passwordEncoder().encode("admin123"))
-                .roles("ADMIN")
-                .build();
-
-        UserDetails admin02 = User.builder()
-                .username("admin02")
-                .password(passwordEncoder().encode("admin123"))
-                .roles("ADMIN")
-                .build();
-
-        return new InMemoryUserDetailsManager(user, admin01, admin02);
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userService);
     }
 
     @Bean
@@ -83,9 +54,9 @@ public class WebSecurityConfigure {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Object principal = authentication != null ? authentication.getPrincipal() : null;
             log.warn("{} is denied", principal, e);
-            response.setStatus(HttpServletResponse.SC_ACCEPTED);
-            response.setContentType("text/plain");
-            response.getWriter().write("## ACCESS DENIED ##");
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("text/plain;charset=UTF-8");
+            response.getWriter().write("ACCESS DENIED");
             response.getWriter().flush();
             response.getWriter().close();
         };
