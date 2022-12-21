@@ -1,5 +1,6 @@
 package com.progrms.devcource.configures;
 
+import com.progrms.devcource.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -7,6 +8,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.vote.UnanimousBased;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -34,11 +37,11 @@ import java.util.List;
 @EnableWebSecurity
 public class WebSecurityConfigure {
 
-    private DataSource dataSource;
+    private UserService userService;
 
     @Autowired
-    public void setDataSource(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public void setUserService(UserService userService) {
+        this.userService = userService;
     }
 
     @Bean
@@ -46,25 +49,9 @@ public class WebSecurityConfigure {
         return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
     }
 
-    // UserDetailsService 의 구현체로 JdbcDaoImpl 을 사용하도록 변경
     @Bean
-    public UserDetailsService userDetailsService(DataSource dataSource) {
-        JdbcDaoImpl jdbcDao = new JdbcDaoImpl();
-
-        jdbcDao.setDataSource(dataSource);
-        jdbcDao.setEnableAuthorities(false);
-        jdbcDao.setEnableGroups(true);
-        jdbcDao.setUsersByUsernameQuery(
-                "SELECT login_id, passwd, true FROM Users WHERE login_id = ?"
-        );
-        jdbcDao.setGroupAuthoritiesByUsernameQuery(
-                "SELECT u.LOGIN_ID, g.NAME, p.NAME FROM USERS u\n"
-                        + " JOIN GROUPS g ON u.GROUP_ID = g.ID\n"
-                        + " LEFT JOIN GROUP_PERMISSION gp ON g.ID = gp.GROUP_ID\n"
-                        + " JOIN PERMISSIONS p ON gp.PERMISSION_ID = p.ID\n"
-                        + " WHERE u.LOGIN_ID = ?");
-
-        return jdbcDao;
+    public AuthenticationManager authenticationManager(AuthenticationManagerBuilder auth) throws Exception {
+        return auth.userDetailsService(userService).and().build();
     }
 
     @Bean
