@@ -1,15 +1,8 @@
 spring:
   application:
-    name: spring security 01
+    name: spring security 06
   thymeleaf:
     cache: true
-    prefix: classpath:templates/
-    suffix: .html
-  security:
-    user:
-      name: user
-      password: user123
-      roles: USER
   messages:
     basename: i18n/messages
     encoding: UTF-8

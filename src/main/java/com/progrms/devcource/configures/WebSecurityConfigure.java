@@ -2,28 +2,23 @@ package com.progrms.devcource.configures;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.AsyncTaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.vote.UnanimousBased;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
-import org.springframework.security.provisioning.UserDetailsManager;
-import org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor;
-import org.springframework.security.task.DelegatingSecurityContextTaskExecutor;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.expression.WebExpressionVoter;
@@ -44,6 +39,11 @@ public class WebSecurityConfigure {
     @Autowired
     public void setDataSource(DataSource dataSource) {
         this.dataSource = dataSource;
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
     }
 
     // UserDetailsService 의 구현체로 JdbcDaoImpl 을 사용하도록 변경
@@ -68,82 +68,26 @@ public class WebSecurityConfigure {
     }
 
     @Bean
-    @Qualifier("myAsyncTaskExecutor")
-    public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(3);
-        executor.setMaxPoolSize(5);
-        executor.setThreadNamePrefix("my-executor-");
-        return executor;
-    }
+    public UserDetailsService userDetailsService() {
+        UserDetails user = User.builder()
+                .username("user")
+                .password(passwordEncoder().encode("user123"))
+                .roles("USER")
+                .build();
 
-    @Bean
-    public DelegatingSecurityContextTaskExecutor taskExecutor(
-            @Qualifier("myAsyncTaskExecutor") AsyncTaskExecutor delegate
-    ) {
-        return new DelegatingSecurityContextAsyncTaskExecutor(delegate);
-    }
+        UserDetails admin01 = User.builder()
+                .username("admin01")
+                .password(passwordEncoder().encode("admin123"))
+                .roles("ADMIN")
+                .build();
 
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
-    }
+        UserDetails admin02 = User.builder()
+                .username("admin02")
+                .password(passwordEncoder().encode("admin123"))
+                .roles("ADMIN")
+                .build();
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .authorizeRequests()
-            .antMatchers("/me", "/asyncHello", "/someMethod").hasAnyRole("USER", "ADMIN")
-            .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN')")
-            .anyRequest().permitAll()
-            .accessDecisionManager(accessDecisionManager())
-            .and()
-            .formLogin()
-            .defaultSuccessUrl("/")
-            .permitAll()
-            .and()
-            /**
-             * Basic Authentication 설정
-             */
-            .httpBasic()
-            .and()
-            /**
-             * remember me 설정
-             */
-            .rememberMe()
-            .rememberMeParameter("remember-me")
-            .tokenValiditySeconds(300)
-            .and()
-            /**
-             * 로그아웃 설정
-             */
-            .logout()
-            .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-            .logoutSuccessUrl("/")
-            .invalidateHttpSession(true)
-            .clearAuthentication(true)
-            .and()
-            /**
-             * HTTP 요청을 HTTPS 요청으로 리다이렉트
-             */
-            .requiresChannel()
-            .anyRequest().requiresSecure()
-            .and()
-            /**
-             * 예외처리 핸들러
-             */
-            .exceptionHandling()
-            .accessDeniedHandler(accessDeniedHandler())
-    ;
-        return http.build();
-    }
-
-    @Bean
-    public AccessDecisionManager accessDecisionManager() {
-        List<AccessDecisionVoter<?>> voters = new ArrayList<>();
-        voters.add(new WebExpressionVoter());
-        voters.add(new OddAdminVoter(new AntPathRequestMatcher("/admin")));
-        return new UnanimousBased(voters);
+        return new InMemoryUserDetailsManager(user, admin01, admin02);
     }
 
     @Bean
@@ -160,36 +104,65 @@ public class WebSecurityConfigure {
         };
     }
 
-//    @Bean
-//    public UserDetailsService userDetailsService(DataSource dataSource) {
-//        JdbcDaoImpl jdbcDao = new JdbcDaoImpl();
-//        jdbcDao.setDataSource(dataSource);
-//        jdbcDao.setEnableAuthorities(false);
-//        jdbcDao.setEnableGroups(true);
-//        jdbcDao.setUsersByUsernameQuery(
-//                "SELECT " +
-//                    "login_id, passwd, true " +
-//                "FROM " +
-//                    "USERS " +
-//                "WHERE " +
-//                    "login_id = ?"
-//        );
-//        jdbcDao.setGroupAuthoritiesByUsernameQuery(
-//                "SELECT " +
-//                    "u.login_id, g.name, p.name " +
-//                "FROM " +
-//                    "users u JOIN groups g ON u.group_id = g.id " +
-//                        "LEFT JOIN group_permission gp ON g.id = gp.group_id " +
-//                        "JOIN permissions p ON p.id = gp.permission_id " +
-//                "WHERE " +
-//                    "u.login_id = ?"
-//        );
-//
-//        return jdbcDao;
-//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                .antMatchers("/me").hasAnyRole("USER", "ADMIN")
+                .antMatchers("/admin").access("isFullyAuthenticated() and hasRole('ADMIN')")
+                .anyRequest().permitAll()
+                .and()
+                .formLogin()
+                .defaultSuccessUrl("/")
+                .permitAll()
+                .and()
+                /**
+                 * Basic Authentication 설정
+                 */
+                .httpBasic()
+                .and()
+                /**
+                 * remember me 설정
+                 */
+                .rememberMe()
+                .rememberMeParameter("remember-me")
+                .tokenValiditySeconds(300)
+                .and()
+                /**
+                 * 로그아웃 설정
+                 */
+                .logout()
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .and()
+                /**
+                 * HTTP 요청을 HTTPS 요청으로 리다이렉트
+                 */
+                .requiresChannel()
+                .anyRequest().requiresSecure()
+                .and()
+                /**
+                 * 예외처리 핸들러
+                 */
+                .exceptionHandling()
+                .accessDeniedHandler(accessDeniedHandler())
+        ;
+        return http.build();
+    }
+
+    @Bean
+    public AccessDecisionManager accessDecisionManager() {
+        List<AccessDecisionVoter<?>> voters = new ArrayList<>();
+        voters.add(new WebExpressionVoter());
+        voters.add(new OddAdminVoter(new AntPathRequestMatcher("/admin")));
+        return new UnanimousBased(voters);
     }
 }
