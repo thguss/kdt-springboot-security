@@ -1,9 +1,11 @@
 package com.progrms.devcource.configures;
 
 import com.progrms.devcource.jwt.Jwt;
+import com.progrms.devcource.jwt.JwtAuthenticationFilter;
 import com.progrms.devcource.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -17,8 +19,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.jstl.core.Config;
 
 @Slf4j
 @Configuration
@@ -77,6 +81,9 @@ public class WebSecurityConfigure {
         );
     }
 
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtConfigure.getHeader(), jwt());
+    }
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -95,6 +102,8 @@ public class WebSecurityConfigure {
                 .and()
                 .exceptionHandling()
                 .accessDeniedHandler(accessDeniedHandler())
+                .and()
+                .addFilterAfter(jwtAuthenticationFilter(), SecurityContextHolderFilter.class)
         ;
         return http.build();
     }
