@@ -37,12 +37,15 @@ public class UserRestController {
      * @return JWT 토큰
      */
     @GetMapping(path = "/user/{username}/token")
-    public String getToken(@PathVariable String username) {
+    public Map<String, String> getToken(@PathVariable String username) {
         UserDetails userDetails = userService.loadUserByUsername(username);
         String[] roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .toArray(String[]::new);
-        return jwt.sign(Jwt.Claims.from(userDetails.getUsername(), roles));
+
+        Map<String, String> toMap = new HashMap<>();
+        toMap.put("token", jwt.sign(Jwt.Claims.from(userDetails.getUsername(), roles)));
+        return toMap;
     }
 
     /**
