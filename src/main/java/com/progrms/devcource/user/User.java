@@ -1,10 +1,13 @@
 package com.progrms.devcource.user;
 
+import lombok.Getter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.persistence.*;
 
+@Getter
 @Entity
 @Table(name = "users")
 public class User {
@@ -23,20 +26,9 @@ public class User {
     @JoinColumn(name = "group_id")
     private Group group;
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getLoginId() {
-        return loginId;
-    }
-
-    public String getPasswd() {
-        return passwd;
-    }
-
-    public Group getGroup() {
-        return group;
+    public void checkPassword(PasswordEncoder passwordEncoder, String credentials) {
+        if (!passwordEncoder.matches(credentials, passwd))
+            throw new IllegalArgumentException("Bad credential");
     }
 
     @Override

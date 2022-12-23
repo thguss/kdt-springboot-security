@@ -1,5 +1,7 @@
 package com.progrms.devcource.configures;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -8,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Getter
-@Setter
+@AllArgsConstructor
 @Component
 @ConfigurationProperties(prefix = "jwt")
 public class JwtConfigure {
@@ -23,11 +25,11 @@ public class JwtConfigure {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("header", header)
-                .append("issuer", issuer)
-                .append("clientSecret", clientSecret)
-                .append("expirySeconds", expirySeconds)
-                .toString();
+        return "JwtConfigure{" +
+                "header='" + header + '\'' +
+                ", issuer='" + issuer + '\'' +
+                ", clientSecret='" + clientSecret + '\'' +
+                ", expirySeconds=" + expirySeconds +
+                '}';
     }
 }

@@ -2,55 +2,45 @@ package com.progrms.devcource.configures;
 
 import com.progrms.devcource.jwt.Jwt;
 import com.progrms.devcource.jwt.JwtAuthenticationFilter;
+import com.progrms.devcource.jwt.JwtAuthenticationProvider;
 import com.progrms.devcource.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.token.TokenService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.jstl.core.Config;
 
 @Slf4j
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfigure {
 
-    private JwtConfigure jwtConfigure;
+    private final JwtConfigure jwtConfigure;
 
-    private UserService userService;
-
-    @Autowired
-    public void setJwtConfigure(JwtConfigure jwtConfigure) {
+    public WebSecurityConfigure(JwtConfigure jwtConfigure) {
         this.jwtConfigure = jwtConfigure;
-    }
-
-    @Autowired
-    public void setUserService(UserService userService) {
-        this.userService = userService;
     }
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().antMatchers("/assets/**", "/h2-console/**");
-    }
-
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userService);
     }
 
     @Bean
@@ -81,11 +71,32 @@ public class WebSecurityConfigure {
         );
     }
 
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtConfigure.getHeader(), jwt());
-    }
     @Bean
-    protected SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public JwtAuthenticationProvider jwtAuthenticationProvider(UserService userService, Jwt jwt) {
+        return new JwtAuthenticationProvider(jwt, userService);
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Autowired
+    public void configureAuthentication(
+            AuthenticationManagerBuilder builder, JwtAuthenticationProvider authenticationProvider
+    ) {
+        builder.authenticationProvider(authenticationProvider);
+    }
+
+    public SecurityContextRepository securityContextRepository() {
+        Jwt jwt = getApplicationContext().getBean(Jwt.class);
+        return new JwtSecurityContextRepository(jwtConfigure.getHeader(), jwt);
+    }
+
+    @Bean
+    protected SecurityFilterChain filterChain(HttpSecurity http, Jwt jwt, TokenService tokenService)
+            throws Exception {
         http
                 .authorizeRequests()
                 .antMatchers("/api/user/me").hasAnyRole("USER", "ADMIN")
@@ -103,8 +114,11 @@ public class WebSecurityConfigure {
                 .exceptionHandling()
                 .accessDeniedHandler(accessDeniedHandler())
                 .and()
-                .addFilterAfter(jwtAuthenticationFilter(), SecurityContextHolderFilter.class)
+                .securityContext()
+                .securityContextRepository(securityContextRepository())
+                .and()
         ;
+
         return http.build();
     }
 

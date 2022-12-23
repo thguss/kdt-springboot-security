@@ -53,10 +53,10 @@ public class Jwt {
 
     static public class Claims {
 
-        String username;
-        String[] roles;
-        Date iat;
-        Date exp;
+        public String username;
+        public String[] roles;
+        public Date iat;
+        public Date exp;
 
         private Claims() {/*no-op*/}
 
